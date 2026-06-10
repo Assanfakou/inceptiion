@@ -1,7 +1,7 @@
 services:
   nginx:
-    image: nginx
-    build: requirement/nginx/
+    build: requirements/nginx/
+    container_name: nginx
     ports:
       - 80:80
     restart: always
@@ -11,8 +11,8 @@ services:
       - Inception
 
   wordpress:
-    image: wordpress
-    build: requirement/wordpress/
+    build: requirements/wordpress/
+    container_name: wordpress
     restart: always
     env_file: .env
     depends_on:
@@ -23,8 +23,8 @@ services:
       - Inception
 
   mariadb:
-    image: mariadb
-    build: requirement/mariadb/
+    build: requirements/mariadb/
+    container_name: mariadb
     restart: always
     env_file: .env
     volumes:
