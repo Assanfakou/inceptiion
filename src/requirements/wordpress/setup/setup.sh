@@ -1,14 +1,26 @@
 #!/bin/bash
 
+echo "Starting WordPress setup..."
+
+# Download WordPress files if empty
+if [ ! -f /var/www/html/wp-login.php ]; then
+    echo "Downloading WordPress..."
+    wp core download --path=/var/www/html --allow-root
+    chown -R www-data:www-data /var/www/html
+fi
+
 # try to connect with the mariadb and run a command there
 # if the command runs stop if not whait for it ,
-until mysql -h mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -e"SELECTE 1;" > /dev/null; do
+echo "connect to mariadb"
+until mysql -h mariadb -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "SELECT 1;" > /dev/null; do
 	echo "whiting for connection with mariadb"
 	sleep 1
 done
 
+cd /var/www/html
 
 # create config if not exists
+echo "creating configuration"
 if [ ! -f wp-config.php ]; then
 	echo "Creating wp-config.php..."
 	wp config create \
@@ -21,6 +33,7 @@ if [ ! -f wp-config.php ]; then
 		echo "wp-config.php already exists. Skipping creation."
 fi
 
+echo "installation the core "
 if ! wp core is-installed --allow-root 2>/dev/null; then
     echo "WordPress is not installed. Installing core now..."
     wp core install \
@@ -33,6 +46,6 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
 else
     echo "WordPress is already installed. Skipping core installation."
 fi
-echo "start the PHP-FPM"
 
+echo "start the PHP-FPM"
 exec php-fpm8.2 -F
