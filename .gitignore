@@ -1,0 +1,6 @@
+*.swp
+*.swap
+run
+*.a.out
+*.test
+*.env
