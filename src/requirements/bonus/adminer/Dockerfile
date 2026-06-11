@@ -1,13 +1,16 @@
 FROM debian:12
 
 RUN apt-get update && apt-get install -y \
-	wget \
+	curl \
 	php-fpm \
 	php 	\
 	php-mysqli
 
-RUN wget -O /var/www/html/index.php https://sourceforge.net/projects/adminer.mirror/
+RUN mkdir -p /var/www/html
+
+RUN curl -L https://github.com/vrana/adminer/releases/download/v4.8.1/adminer-4.8.1.php \
+    -o /var/www/html/index.php
 
 WORKDIR	/var/www/html
 
-CMD ["php-fpm"]
+CMD ["php", "-S", "0.0.0.0:8080", "-t", "/var/www/html"]

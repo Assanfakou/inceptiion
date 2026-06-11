@@ -33,6 +33,14 @@ services:
       - mariadb_data:/var/lib/mysql
     networks:
       - Inception
+  adminer:
+    build: requirements/bonus/adminer/
+    container_name: adminer
+    restart: always
+    depends_on:
+      - mariadb
+    networks:
+      - Inception
 
 volumes:
   wordpress_data:
