@@ -34,6 +34,7 @@ if [ ! -f wp-config.php ]; then
 fi
 
 echo "installation the core "
+
 if ! wp core is-installed --allow-root 2>/dev/null; then
     echo "WordPress is not installed. Installing core now..."
     wp core install \
@@ -45,6 +46,18 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
 	--allow-root
 else
     echo "WordPress is already installed. Skipping core installation."
+fi
+
+# create second user if not exists
+if ! wp user get "$WP_USER" --allow-root > /dev/null 2>&1; then
+	echo "Ceating second user..."
+
+	wp user create "$WP_USER" "$WP_USER_EMAIL" \
+		--user_pass="$WP_USER_PASSWORD" \
+		--role=author \
+		--allow-root
+else
+	echo "WordPress 2nd user already there"
 fi
 
 echo "start the PHP-FPM"
