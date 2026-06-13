@@ -1,6 +1,6 @@
 FROM debian:12
 
-RUN apt-get update && apt-get install -y vim openssl curl
+RUN apt-get update && apt-get install -y nginx vim openssl curl 
 
 RUN openssl req -x509 -nodes -days 365 \
     -newkey rsa:2048 \
