@@ -6,7 +6,7 @@ RUN curl -L https://github.com/portainer/portainer/releases/download/2.27.6/port
     -o portainer.tar.gz
 
 RUN mkdir /portainer \
-    && tar -xvf portainer.tar.gz -C /portainer --strip-components=1
+    && tar -xvf portainer.tar.gz -C / 
 
 WORKDIR /portainer
 
