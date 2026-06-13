@@ -70,6 +70,14 @@ services:
       - nginx
     networks:
       - Inception
+  portainer:
+    build: requirements/bonus/portainer/
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - Inception
 
 volumes:
   wordpress_data:
