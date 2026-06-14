@@ -1,4 +1,4 @@
-# FTP Service (vsftpd) - Inception Bonus
+# FTP Service (vsftpd)
 
 ## Overview
 
@@ -445,82 +445,6 @@ Expected:
 ```text
 download_test.txt
 ```
-
----
-
-# Common Issues
-
-## Permission Denied
-
-Error:
-
-```text
-550 Permission denied
-```
-
-Cause:
-
-```text
-FTP user cannot write to /var/www/html
-```
-
-Check:
-
-```bash
-ls -ld /var/www/html
-```
-
----
-
-## Passive Mode Failure
-
-Error:
-
-```text
-425 Can't open data connection
-```
-
-Cause:
-
-```text
-Passive ports not exposed
-```
-
-Verify:
-
-```yaml
-ports:
-  - "21:21"
-  - "10000-10100:10000-10100"
-```
-
----
-
-## Cannot Connect
-
-Check:
-
-```bash
-docker ps
-docker logs ftp
-```
-
-Verify port 21 is exposed.
-
----
-
-# Security Notes
-
-This implementation is intended for the Inception project.
-
-In production environments:
-
-- Prefer SFTP (SSH File Transfer Protocol).
-- Use FTPS (FTP over TLS).
-- Avoid plain-text credentials.
-- Restrict users to specific directories.
-- Use strong passwords.
-
 ---
 
 # Key Takeaways
