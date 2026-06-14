@@ -3,9 +3,7 @@ FROM debian:12
 RUN apt-get update && apt-get install -y \
 	curl \
 	php-fpm \
-	php 	\
-	php-mysqli
-
+	php-mysql
 RUN mkdir -p /var/www/html
 
 RUN curl -L https://github.com/vrana/adminer/releases/download/v4.8.1/adminer-4.8.1.php \
