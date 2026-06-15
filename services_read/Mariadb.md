@@ -1,30 +1,20 @@
-# MariaDB Service Explanation
+ # MariaDB Service Explanation
 
 ## What is MariaDB?
 
-MariaDB is an open-source relational database — a fork of MySQL.
-
-In this project, MariaDB:
-
-* stores all WordPress content (posts, pages, users, settings)
-* is only accessible internally by the WordPress container
-* is never exposed to the outside world
+MariaDB is an open-source relational database (a fork of MySQL). In this project MariaDB
+stores WordPress data (posts, pages, users, settings) and is intended to be reachable
+only on the internal Docker network by the WordPress container.
 
 ---
 
-## Dockerfile Explained
+## How this image is built (Dockerfile)
 
-### Install MariaDB
+Key points from `srcs/requirements/mariadb/Dockerfile`:
 
-```dockerfile
-RUN apt-get update && apt-get install -y mariadb-server
-```
-
-Installs the MariaDB server package.
-
----
-
-### Create runtime directory
+- **Base image:** `debian:12`.
+- **Install:** `apt-get update && apt-get install -y mariadb-server` installs the server package.
+- **Runtime dir:** creates `/run/mysqld` and sets ownership:
 
 ```dockerfile
 RUN mkdir -p /run/mysqld
@@ -32,35 +22,39 @@ RUN chown -R mysql:mysql /run/mysqld
 RUN chown -R mysql:mysql /var/lib/mysql
 ```
 
-`/run/mysqld` is where MariaDB stores its socket file and PID file at runtime.
-Ownership is set to the `mysql` user because MariaDB runs as `mysql`, not root.
-
----
-
-### Configure bind address
+    This ensures MariaDB can create its socket/PID files and write data.
+- **Bind address change:** the Dockerfile runs:
 
 ```dockerfile
-RUN sed -i 's/^bind-address.*/bind-address=0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+RUN sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mariadb.conf.d/50-server.cnf
 ```
 
-By default MariaDB only listens on `127.0.0.1` (localhost inside the container).
-This changes it to `0.0.0.0` so the WordPress container can reach it over the Docker network.
+    This replaces `127.0.0.1` with `0.0.0.0` in the server config so the server listens on all interfaces
+    (required for other containers on the Docker network to connect).
+- **Init script:** copies `setup/setup.sh` into the image as `setup.sh`, makes it executable and sets it
+    as the container command:
+
+```dockerfile
+COPY setup/setup.sh setup.sh
+RUN chmod +x setup.sh
+CMD ["./setup.sh"]
+```
+
+    The container runs `./setup.sh` as PID 1 on start.
 
 ---
 
-## mariadb.sh Script Explained
+## `setup.sh` (init + run) explained
 
-### Start MariaDB in background
+File: `srcs/requirements/mariadb/setup/setup.sh` — behaviour summary:
+
+- The script starts a temporary background server to perform initialization:
 
 ```bash
 mysqld_safe --user=mysql &
 ```
 
-Starts MariaDB temporarily in the background for the init phase.
-
----
-
-### Wait until ready
+- It waits until MariaDB accepts connections:
 
 ```bash
 until mysqladmin ping --silent; do
@@ -68,23 +62,16 @@ until mysqladmin ping --silent; do
 done
 ```
 
-Waits until MariaDB is accepting connections before running SQL commands.
-
----
-
-### First run check
+- It checks whether the expected database exists by running:
 
 ```bash
-if ! mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "USE $MYSQL_DATABASE;" 2>/dev/null; then
+if ! mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "USE $MYSQL_DATABASE;" 2>/dev/null ; then
+    # initialization block
+fi
 ```
 
-On first run, root has no password yet so this check fails and we enter the init block.
-On second run, root has a password and the database exists so we skip init entirely.
-This prevents re-initializing the database on every container restart.
-
----
-
-### Init block (heredoc)
+    On a fresh container root typically has no password yet, so the check fails and the script
+    enters the initialization block. Inside the heredoc it runs the SQL statements:
 
 ```sql
 CREATE DATABASE $MYSQL_DATABASE;
@@ -94,67 +81,75 @@ ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 ```
 
-All SQL runs in a single session. Root has no password when the session opens so auth
-succeeds, then root password is set within that same authenticated session.
+    - `CREATE DATABASE` — creates the WordPress DB
+    - `CREATE USER ... IDENTIFIED BY` — creates the application user (host `%` allows connections from any host)
+    - `GRANT ALL PRIVILEGES` — grants permissions on the WordPress DB
+    - `ALTER USER` — sets the root password
+    - `FLUSH PRIVILEGES` — applies changes
 
-- `CREATE DATABASE` — creates the WordPress database
-- `CREATE USER` — creates the WordPress user accessible from any host (%)
-- `GRANT ALL PRIVILEGES` — gives the user full control over the database
-- `ALTER USER` — sets the root password
-- `FLUSH PRIVILEGES` — applies all permission changes immediately
-
----
-
-### Restart cleanly
+- After initialization the script shuts down the temporary server and replaces the process with the real server:
 
 ```bash
 mysqladmin -u root -p"$MYSQL_ROOT_PASSWORD" shutdown
-exec mysqld --user=mysql
+exec mariadbd --user=mysql
 ```
 
-Shuts down the temporary background instance, then starts the final MariaDB as PID 1
-in foreground using `exec`.
+    Note: the final command uses `mariadbd` (the MariaDB server binary) as PID 1.
 
 ---
 
-## Useful Evaluation Commands
+## Environment variables used
 
-### Connect to MariaDB as root
+Make sure these environment variables are provided (for example in your `docker-compose.yml`):
+
+- `MYSQL_ROOT_PASSWORD` — password to set for the `root`@`localhost` account during init.
+- `MYSQL_DATABASE` — name of the WordPress database to create (e.g. `wordpress` or `mydb`).
+- `MYSQL_USER` — application DB username to create (e.g. `wp_user`).
+- `MYSQL_PASSWORD` — password for the application DB user.
+
+If any of these are missing, initialization may fail or behave unexpectedly.
+
+---
+
+## Useful verification commands
+
+Replace `<mariadb_container>` with your actual container name (commonly `mariadb` if set in `docker-compose`).
+
+- **Connect as root (interactive):**
 ```bash
-docker exec -it mariadb mysql -u root -proot123
+docker exec -it <mariadb_container> mysql -u root -p"$MYSQL_ROOT_PASSWORD"
 ```
 
-### List databases
+- **List databases:**
 ```bash
-docker exec -it mariadb mysql -u root -proot123 -e "SHOW DATABASES;"
+docker exec -it <mariadb_container> mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "SHOW DATABASES;"
 ```
 
-### Check WordPress database tables
+- **Show tables in the WordPress DB:**
 ```bash
-docker exec -it mariadb mysql -u root -proot123 -e "USE mydb; SHOW TABLES;"
+docker exec -it <mariadb_container> mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "USE $MYSQL_DATABASE; SHOW TABLES;"
 ```
 
-### Check users exist
+- **Connect as application user:**
 ```bash
-docker exec -it mariadb mysql -u root -proot123 -e "SELECT User, Host FROM mysql.user;"
+docker exec -it <mariadb_container> mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
 ```
 
-### Connect as WordPress user
+- **Check listening port (container networking):**
 ```bash
-docker exec -it mariadb mysql -u assan -p1234 mydb
+docker exec -it <mariadb_container> ss -tlnp | grep 3306
 ```
 
-### Check MariaDB is listening on 0.0.0.0
+- **Confirm bind-address change in config:**
 ```bash
-docker exec -it mariadb ss -tlnp | grep 3306
+docker exec -it <mariadb_container> grep -n "127.0.0.1\\|bind-address" /etc/mysql/mariadb.conf.d/50-server.cnf || true
 ```
 
-### Check WordPress posts in database
-```bash
-docker exec -it mariadb mysql -u root -proot123 -e "SELECT ID, post_title, post_status FROM mydb.wp_posts WHERE post_status='publish';"
-```
+---
 
-### Check bind address in config
-```bash
-docker exec -it mariadb grep bind-address /etc/mysql/mariadb.conf.d/50-server.cnf
-```
+## Notes 
+
+- The Dockerfile uses a simple `sed` replacement to change `127.0.0.1` to `0.0.0.0`. If upstream config format changes this may need adjustment.
+- The init script assumes root can connect without a password on the first run; ensure the image/container starts with an empty data directory for initialization to run.
+- The application user is created with host `%` so it can connect from other containers on the Docker network.
+
