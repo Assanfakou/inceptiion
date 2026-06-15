@@ -141,7 +141,7 @@ docker exec -it mariadb mysql -u root -proot123 -e "SELECT User, Host FROM mysql
 
 ### Connect as WordPress user
 ```bash
-docker exec -it mariadb mysql -u anass -p1234 mydb
+docker exec -it mariadb mysql -u assan -p1234 mydb
 ```
 
 ### Check MariaDB is listening on 0.0.0.0
