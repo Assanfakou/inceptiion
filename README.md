@@ -36,7 +36,6 @@ FTP_USER=
 FTP_PASSWORD=
 ```
 
-> ⚠️ Do not commit this file to version control — it contains sensitive credentials.
 
 ### 2. Build and run
 
