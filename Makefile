@@ -15,9 +15,12 @@ up:
 down:
 	@$(COMPOSE) down
 
+status:
+	@$(COMPOSE) ps
 clean:
 	@$(COMPOSE) down -v
 	@sudo rm -rf $(DATA_PATH)
+restart: down up
 
 fclean: clean
 	@docker system prune -af
@@ -27,7 +30,4 @@ re: fclean all
 logs:
 	@$(COMPOSE) logs 
 
-ps:
-	docker ps
-
-.PHONY: all up down clean fclean re logs ps
+.PHONY: all up down clean fclean re logs status restart
