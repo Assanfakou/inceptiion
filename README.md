@@ -12,8 +12,8 @@ The stack includes a WordPress site served through an NGINX reverse proxy with T
 
 ### Prerequisites
 
-- A Linux host with Docker and Docker Compose installed
-- `sudo` privileges (the Makefile updates `/etc/hosts`)
+- Make sure to go to the `/etc/hosts/` with sudo.
+- Change the localhost with the login.42.fr.
 
 ### 1. Set up environment variables
 
@@ -24,9 +24,9 @@ MYSQL_ROOT_PASSWORD=
 MYSQL_DATABASE=
 MYSQL_USER=
 MYSQL_PASSWORD=
+DB_HOST=
 WP_URL=
-WP_TITLE=
-WP_ADMIN_USER=
+WP_USER_ADMIN=
 WP_ADMIN_PASSWORD=
 WP_ADMIN_EMAIL=
 WP_USER=
@@ -45,7 +45,7 @@ make all      # create data directories, build all images, and start the stack
 make up       # start containers without rebuilding
 make down     # stop the stack
 make clean    # stop the stack and remove containers, networks, volumes, and local data
-make ps       # check the status of running containers
+make status   # check the status of running containers
 make logs     # follow live service logs
 ```
 
@@ -56,8 +56,8 @@ make logs     # follow live service logs
 | WordPress site | `https://hfakou.42.fr` |
 | WordPress admin | `https://hfakou.42.fr/wp-admin/` |
 | Adminer | `https://hfakou.42.fr/adminer/` |
-| Static site | `https://hfakou.42.fr/static-website/` |
-| Portainer | `https://hfakou.42.fr:9443/` |
+| Static site | `https://hfakou.42.fr/static/` |
+| Portainer | `https://hfakou.42.fr/portainer/` |
 | FTP | `ftp hfakou.42.fr` |
 
 SSL certificates are self-signed — accept the browser warning on first access.

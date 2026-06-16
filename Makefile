@@ -17,6 +17,8 @@ down:
 
 status:
 	@$(COMPOSE) ps
+logs:
+	@$(COMPOSE) logs 
 clean:
 	@$(COMPOSE) down -v
 	@sudo rm -rf $(DATA_PATH)
@@ -27,7 +29,5 @@ fclean: clean
 
 re: fclean all
 
-logs:
-	@$(COMPOSE) logs 
 
 .PHONY: all up down clean fclean re logs status restart
