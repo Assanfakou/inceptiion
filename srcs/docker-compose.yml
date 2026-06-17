@@ -1,6 +1,7 @@
 services:
   nginx:
     build: requirements/nginx/
+    image: nginx
     container_name: nginx
     ports:
       - "443:443"
@@ -10,10 +11,11 @@ services:
     volumes:
       - wordpress_data:/var/www/html
     networks:
-      - Inception
+      - inception
 
   wordpress:
     build: requirements/wordpress/
+    image: wordpress
     container_name: wordpress
     restart: always
     env_file: .env
@@ -22,35 +24,40 @@ services:
     volumes:
       - wordpress_data:/var/www/html
     networks:
-      - Inception
+      - inception
+
   mariadb:
     build: requirements/mariadb/
+    image: mariadb
     container_name: mariadb
     restart: always
     env_file: .env
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
-      - Inception
+      - inception
 
   adminer:
     build: requirements/bonus/adminer/
+    image: adminer
     container_name: adminer
     restart: always
     depends_on:
       - mariadb
     networks:
-      - Inception
+      - inception
+
   redis:
     build: requirements/bonus/redis/
+    image: redis
     container_name: redis
     restart: always
-    depends_on:
-      - mariadb
     networks:
-      - Inception
+      - inception
+
   ftp:
     build: requirements/bonus/ftp/
+    image: ftp
     container_name: ftp
     ports:
       - "21:21"
@@ -62,30 +69,34 @@ services:
     depends_on:
         - wordpress
     networks:
-      - Inception
-  sttic_site:
+      - inception
+
+  static_site:
     build: requirements/bonus/static/
+    image: static_site    
     container_name: static_site
     restart: always
     depends_on:
       - nginx
     networks:
-      - Inception
+      - inception
+
   portainer:
     build: requirements/bonus/portainer/
+    image: portainer
     container_name: portainer
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - Inception
+      - inception
 
 volumes:
   wordpress_data:
     driver: local
     driver_opts:
       type: none
-      o : bind
+      o: bind
       device: /home/${USER}/data/wordpress
   mariadb_data:
     driver: local
@@ -93,5 +104,7 @@ volumes:
       type: none
       o: bind
       device: /home/${USER}/data/mariadb
+
 networks:
-  Inception:
+  inception:
+    name: inception
