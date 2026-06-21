@@ -62,7 +62,7 @@ WP_USER_PASSWORD=your_user_password
 
 # FTP
 FTP_USER=ftpuser
-FTP_PASSWORD=your_ftp_password
+FTP_PASS=your_ftp_password
 ```
 
 ---
